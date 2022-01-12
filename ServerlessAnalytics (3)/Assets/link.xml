@@ -1,0 +1,13 @@
+<linker>
+  <assembly fullname="System.Core">
+    <type fullname="System.Linq.Expressions.Interpreter.LightLambda" preserve="all" />
+  </assembly>
+  <assembly fullname="AWSSDK.Core" preserve="all"/>
+  <assembly fullname="AWSSDK.CognitoIdentity" preserve="all"/>
+  <assembly fullname="AWSSDK.Kinesis" preserve="all"/>
+  <assembly fullname="AWSSDK.SecurityToken" preserve="all"/>
+  <assembly fullname="AWSSDK.CognitoIdentityProvider" preserve="all"/>
+  <assembly fullname="Amazon.Extensions.CognitoAuthentication" preserve="all"/>
+  <assembly fullname="AWSSDK.PersonalizeEvents" preserve="all"/>
+  <assembly fullname="AWSSDK.PersonalizeRuntime" preserve="all"/>
+</linker>

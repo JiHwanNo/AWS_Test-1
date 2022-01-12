@@ -1,0 +1,60 @@
+import sys
+from awsglue.transforms import *
+from awsglue.utils import getResolvedOptions
+from pyspark.context import SparkContext
+from awsglue.context import GlueContext
+from awsglue.job import Job
+
+## @params: [JOB_NAME]
+args = getResolvedOptions(sys.argv, ['JOB_NAME'])
+
+sc = SparkContext()
+glueContext = GlueContext(sc)
+spark = glueContext.spark_session
+job = Job(glueContext)
+job.init(args['JOB_NAME'], args)
+## @type: DataSource
+## @args: [database = "gameeventsdatabase-dn9qgqbuld4p", table_name = "processed_events", transformation_ctx = "datasource0"]
+## @return: datasource0
+## @inputs: []
+datasource0 = glueContext.create_dynamic_frame.from_catalog(database = "gameeventsdatabase-dn9qgqbuld4p", table_name = "processed_events", transformation_ctx = "datasource0")
+## @type: SelectFields
+## @args: [paths = ["user_id", "event_type", "event_timestamp", "event_data"], transformation_ctx = "selectfields10"]
+## @return: selectfields10
+## @inputs: [frame = datasource0]
+selectfields10 = SelectFields.apply(frame = datasource0, paths = ["user_id", "event_type", "event_timestamp", "event_data"], transformation_ctx = "selectfields10")
+selectfields10.printSchema( )
+## @type: Unbox
+## @args: [path = "event_data", format = "json", separator = ",", escaper = "none", skipFirst = "False", withHeader = "True", transformation_ctx = "unboxfields1"]
+## @return: unboxfields1
+## @inputs: [frame = selectfields10]
+unboxfields1 = Unbox.apply(frame = selectfields10, path = "event_data", format = "json", separator = ",", escaper = "none", skipFirst = "False", withHeader = "True", transformation_ctx = "unboxfields1")
+unboxfields1.printSchema( )
+## @type: Filter
+## @args: [f = lambda x: x["event_data.event_type"] in ["iap_transaction"], transformation_ctx = "filter_df"]
+## @return: filter_df
+## @inputs: [frame = unboxfields1]
+filter_df = Filter.apply(frame = unboxfields1, f = lambda x: x["event_type"] in ["iap_transaction"], transformation_ctx = "filter_df")
+## @type: ApplyMapping
+## @args: [mapping = [("user_id", "string", "user_id", "string"), ("event_data.item_id", "int", "item_id", "string"), ("event_type", "string", "event_type", "string"), ("event_data.real_value", "double", "event_value", "float"), ("event_timestamp", "bigint", "timestamp", "long")], transformation_ctx = "applymapping6"]
+## @return: applymapping6
+## @inputs: [frame = filter_df]
+applymapping6 = ApplyMapping.apply(frame = filter_df, mappings = [("user_id", "string", "user_id", "string"), ("event_data.item_id", "int", "item_id", "string"), ("event_type", "string", "event_type", "string"), ("event_data.real_value", "double", "event_value", "float"), ("event_timestamp", "long", "timestamp", "long")], transformation_ctx = "applymapping6")
+## @type: SelectFields
+## @args: [paths = ["user_id", "item_id", "event_type", "event_value", "timestamp"], transformation_ctx = "selectfields7"]
+## @return: selectfields7
+## @inputs: [frame = applymapping6]
+selectfields7 = SelectFields.apply(frame = applymapping6, paths = ["user_id", "item_id", "event_type", "event_value", "timestamp"], transformation_ctx = "selectfields7")
+selectfields7.printSchema( )
+## @type: ResolveChoice
+## @args: [choice = "MATCH_CATALOG", database = "gameeventsdatabase-dn9qgqbuld4p", table_name = "iaptransaction", transformation_ctx = "resolvechoice8"]
+## @return: resolvechoice8
+## @inputs: [frame = selectfields7]
+resolvechoice8 = ResolveChoice.apply(frame = selectfields7, choice = "MATCH_CATALOG", database = "gameeventsdatabase-dn9qgqbuld4p", table_name = "iaptransaction", transformation_ctx = "resolvechoice8")
+data_df = resolvechoice8.repartition(1)
+## @type: DataSink
+## @args: [database = "gameeventsdatabase-dn9qgqbuld4p", table_name = "iaptransaction", transformation_ctx = "datasink1"]
+## @return: datasink1
+## @inputs: [frame = resolvechoice8]
+datasink1 = glueContext.write_dynamic_frame.from_catalog(frame = data_df, database = "gameeventsdatabase-dn9qgqbuld4p", table_name = "iaptransaction", transformation_ctx = "datasink9")
+job.commit()
